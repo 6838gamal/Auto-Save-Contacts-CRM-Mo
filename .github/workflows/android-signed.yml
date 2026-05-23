@@ -20,25 +20,35 @@ jobs:
       - name: Install Gradle
         run: sudo apt-get update && sudo apt-get install -y gradle
 
-      # 🔥 إنشاء wrapper ثم إجباره على الإصدار الصحيح
+      # إنشاء Gradle Wrapper (حل مشكلة gradlew)
       - name: Generate Gradle Wrapper
         run: gradle wrapper --gradle-version 9.3.1
 
-      - name: Grant Permission
+      - name: Grant permission
         run: chmod +x gradlew
 
-      - name: Force correct Gradle version
+      # إصلاح ملف wrapper
+      - name: Fix Gradle Wrapper
         run: |
           echo "distributionUrl=https\://services.gradle.org/distributions/gradle-9.3.1-bin.zip" > gradle/wrapper/gradle-wrapper.properties
 
+      # فك تشفير keystore في المكان الصحيح (app/)
       - name: Decode Keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > upload-key.jks
+        run: |
+          mkdir -p app
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/upload-key.jks
 
+      # بناء APK موقّع
       - name: Build Release APK
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: ./gradlew assembleRelease
 
+      # رفع الناتج
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: signed-release-apk
           path: app/build/outputs/apk/release/*.apk
