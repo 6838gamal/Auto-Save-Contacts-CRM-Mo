@@ -20,16 +20,16 @@ jobs:
       - name: Install Gradle
         run: sudo apt-get update && sudo apt-get install -y gradle
 
-      # 🔥 أهم خطوة: إنشاء gradlew فعليًا
+      # 🔥 إنشاء wrapper ثم إجباره على الإصدار الصحيح
       - name: Generate Gradle Wrapper
-        run: gradle wrapper
+        run: gradle wrapper --gradle-version 9.3.1
 
       - name: Grant Permission
         run: chmod +x gradlew
 
-      - name: Fix Gradle Version (force modern)
+      - name: Force correct Gradle version
         run: |
-          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-bin.zip" > gradle/wrapper/gradle-wrapper.properties
+          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-9.3.1-bin.zip" > gradle/wrapper/gradle-wrapper.properties
 
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > upload-key.jks
