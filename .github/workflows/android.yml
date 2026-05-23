@@ -2,9 +2,6 @@ name: Build Release APK
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
   build:
@@ -20,8 +17,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Install Gradle
+        run: sudo apt-get update && sudo apt-get install -y gradle
+
+      - name: Generate Gradle Wrapper (fix missing gradlew)
+        run: gradle wrapper
 
       - name: Grant Permission
         run: chmod +x gradlew
@@ -33,4 +33,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: app/build/outputs/apk/release/*.apk 
+          path: app/build/outputs/apk/release/*.apk
