@@ -17,26 +17,29 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # إصلاح Gradle القديم داخل المشروع
+      - name: Fix Gradle Wrapper Version
+        run: |
+          mkdir -p gradle/wrapper
+          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-bin.zip" > gradle/wrapper/gradle-wrapper.properties
 
-      - name: Install Gradle
-        run: sudo apt-get update && sudo apt-get install -y gradle
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
 
-      - name: Generate Gradle Wrapper (fix missing gradlew)
-        run: gradle wrapper
-
-      - name: Grant Permission
-        run: chmod +x gradlew
-
+      # فك التشفير للـ keystore
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > upload-key.jks
 
+      # بناء APK موقّع
       - name: Build Release APK
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: ./gradlew assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: signed-release-apk
           path: app/build/outputs/apk/release/*.apk
