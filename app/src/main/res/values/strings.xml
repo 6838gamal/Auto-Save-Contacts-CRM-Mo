@@ -1,0 +1,69 @@
+<resources>
+    <string name="app_name">AutoSave Contacts CRM</string>
+    
+    <!-- Screen Titles -->
+    <string name="title_splash">جاري التحميل</string>
+    <string name="title_dashboard">لوحة التحكم</string>
+    <string name="title_saved_contacts">العملاء المحفوظون</string>
+    <string name="title_logs">سجلات النظام</string>
+    <string name="title_export">تصدير البيانات</string>
+    <string name="title_settings">الإعدادات</string>
+    <string name="title_permissions">إدارة الصلاحيات</string>
+
+    <!-- General Actions -->
+    <string name="action_save">حفظ</string>
+    <string name="action_edit">تعديل</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="action_search">بحث عن عميل...</string>
+    <string name="action_clear_all">مسح الكل</string>
+    <string name="action_share">مشاركة</string>
+    <string name="action_request">طلب الصلاحية</string>
+    
+    <!-- Dashboard Stats -->
+    <string name="stat_saved_contacts">إجمالي العملاء</string>
+    <string name="stat_latest_contact">آخر عميل مضاف</string>
+    <string name="stat_service_status">حالة الخدمة</string>
+    <string name="stat_running">رصد نشط بالخلفية</string>
+    <string name="stat_stopped">متوقفة</string>
+    <string name="service_sticky_title">رصد تلقائي للعملاء نشط</string>
+
+    <!-- Permissions Explanations -->
+    <string name="perm_desc_contacts">حفظ جهات الاتصال مباشرة داخل دليل الهاتف وربطها بالأسماء التلقائية.</string>
+    <string name="perm_desc_calls">رصد المكالمات الواردة والصادرة لاستخراج جهات الاتصال غير المسجلة تلقائياً.</string>
+    <string name="perm_desc_sms">قراءة الرسائل النصية القصيرة المستلمة وحفظ أرقام المرسلين مجهولي الهوية.</string>
+    <string name="perm_desc_notification_listener">رصد إشعارات تطبيق WhatsApp لحفظ الأرقام الجديدة تلقائياً بدون تكلفة أو عناء.</string>
+    <string name="perm_desc_accessibility">مراقبة نوافذ التطبيق الذكية لضمان أعلى دقة في التقاط الأرقام من واجهات المحادثات والاتصال.</string>
+    <string name="perm_desc_battery">استبعاد التطبيق من تحسين استهلاك البطارية لضمان استقرار العمل في الخلفية بدون توقف بعد قفل الهاتف.</string>
+
+    <!-- Settings Items -->
+    <string name="setting_theme">مظهر التطبيق</string>
+    <string name="setting_theme_dark">الوضع الداكن</string>
+    <string name="setting_theme_light">الوضع الفاتح</string>
+    <string name="setting_developer">المطور</string>
+    <string name="setting_developer_desc">م. جمال المقاطري - متخصص تطوير تطبيقات Native Android</string>
+    <string name="setting_contact_dev">تواصل مع المطور</string>
+    <string name="setting_privacy">سياسة الخصوصية</string>
+    <string name="setting_feedback">إرسال ملاحظات واقتراحات</string>
+    <string name="setting_version">إصدار التطبيق</string>
+    
+    <!-- Messages / Toast States -->
+    <string name="msg_empty_contacts">لا يوجد عملاء محفوظون حتى الآن. سيتم إضافة العملاء تلقائياً عند تلقي مكالمات، رسائل أو إشعارات واتساب جديدة.</string>
+    <string name="msg_empty_logs">سجل المعالجة فارغ حالياً.</string>
+    <string name="msg_export_success">تم تصدير سجل العملاء بصيغة CSV بنجاح.</string>
+    <string name="msg_export_empty">لا توجد جهات اتصال لتصديرها.</string>
+    <string name="msg_edit_contact_title">تعديل اسم العميل</string>
+    <string name="msg_edit_contact_name_label">اسم العميل الجديد:</string>
+    <string name="msg_delete_confirm_title">حذف عميل</string>
+    <string name="msg_delete_confirm_desc">هل أنت متأكد من رغبتك في حذف هذا العميل من سجلات الـ CRM؟ لن يؤيد حذفه من الهاتف تلقائياً.</string>
+    <string name="msg_perm_prompt_title">الصلاحيات متطلبة</string>
+    <string name="msg_perm_prompt_desc">من فضلك قم بمنح جميع الصلاحيات اللازمة لضمان تشغيل خدمات الرصد التلقائي ومزامنة قاعدة البيانات إلى قائمة جهات الاتصال بالهاتف.</string>
+    
+    <!-- Drawer Items -->
+    <string name="menu_home">الرئيسية</string>
+    <string name="menu_contacts">العملاء المحفوظون</string>
+    <string name="menu_logs">السجل والتدقيق</string>
+    <string name="menu_export">تصدير التقارير (CSV)</string>
+    <string name="menu_permissions">إدارة الصلاحيات</string>
+    <string name="menu_settings">الإعدادات</string>
+</resources>
