@@ -118,4 +118,125 @@ object ContactsManager {
             return false
         }
     }
+
+    /**
+     * Inserts a new contact specifically linked to a Google/Gmail account.
+     * This triggers automatic synchronization to Google Contacts on Android.
+     */
+    fun saveToGoogleContacts(context: Context, name: String, phoneNumber: String, gmailAccount: String): Boolean {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.WRITE_CONTACTS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w(TAG, "WRITE_CONTACTS permission not granted, cannot save to Google Contacts")
+            return false
+        }
+
+        try {
+            val ops = ArrayList<ContentProviderOperation>()
+
+            // Step 1: Add RawContact with Google account details
+            ops.add(
+                ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                    .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, "com.google")
+                    .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, gmailAccount.trim())
+                    .build()
+            )
+
+            // Step 2: Add Contact Name
+            ops.add(
+                ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(
+                        ContactsContract.Data.MIMETYPE,
+                        ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE
+                    )
+                    .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name)
+                    .build()
+            )
+
+            // Step 3: Add Contact Phone
+            ops.add(
+                ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(
+                        ContactsContract.Data.MIMETYPE,
+                        ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE
+                    )
+                    .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phoneNumber)
+                    .withValue(
+                        ContactsContract.CommonDataKinds.Phone.TYPE,
+                        ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE
+                    )
+                    .build()
+            )
+
+            context.contentResolver.applyBatch(ContactsContract.AUTHORITY, ops)
+            Log.i(TAG, "Successfully saved $name ($phoneNumber) to Google account: $gmailAccount")
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save contact to Google account", e)
+            return false
+        }
+    }
+
+    /**
+     * Imports contacts associated with any Google/Gmail account or a specific one.
+     * Returns a list of Pair(Name, Phone).
+     */
+    fun importFromGoogleContacts(context: Context, gmailAccount: String?): List<Pair<String, String>> {
+        val importedList = ArrayList<Pair<String, String>>()
+        if (ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.READ_CONTACTS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w(TAG, "READ_CONTACTS permission not granted, cannot import from Google")
+            return importedList
+        }
+
+        val uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI
+        val projection = arrayOf(
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+            ContactsContract.CommonDataKinds.Phone.NUMBER,
+            "account_type",
+            "account_name"
+        )
+
+        var selection = "account_type = ?"
+        val selectionArgs = ArrayList<String>()
+        selectionArgs.add("com.google")
+
+        if (!gmailAccount.isNullOrBlank()) {
+            selection += " AND account_name = ?"
+            selectionArgs.add(gmailAccount.trim())
+        }
+
+        try {
+            context.contentResolver.query(
+                uri,
+                projection,
+                selection,
+                selectionArgs.toTypedArray(),
+                null
+            )?.use { cursor ->
+                val nameIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+
+                while (cursor.moveToNext()) {
+                    val name = if (nameIndex != -1) cursor.getString(nameIndex) else ""
+                    val rawNum = if (numberIndex != -1) cursor.getString(numberIndex) else ""
+                    
+                    if (name.isNotBlank() && rawNum.isNotBlank()) {
+                        importedList.add(Pair(name, rawNum))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to import from Google Contacts", e)
+        }
+
+        return importedList.distinctBy { it.second }
+    }
 }

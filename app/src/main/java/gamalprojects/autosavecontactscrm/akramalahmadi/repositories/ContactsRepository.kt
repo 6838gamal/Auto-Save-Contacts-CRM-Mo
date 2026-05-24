@@ -83,8 +83,16 @@ class ContactsRepository(private val db: AppDatabase) {
         val nextId = getNextCustomerId()
         val clientName = "عميل $nextId"
 
-        // Save to native contacts
-        val isSynced = ContactsManager.saveToNativeContacts(context, clientName, rawNumber)
+        // Load sync configuration
+        val googleSyncEnabled = settingDao.getSetting("google_sync_enabled")?.value == "1"
+        val gmailAccount = settingDao.getSetting("gmail_account")?.value ?: ""
+
+        // Save to native contacts or Google account contacts
+        val isSynced = if (googleSyncEnabled && gmailAccount.isNotBlank()) {
+            ContactsManager.saveToGoogleContacts(context, clientName, rawNumber, gmailAccount)
+        } else {
+            ContactsManager.saveToNativeContacts(context, clientName, rawNumber)
+        }
 
         // Save to internal CRM database
         val newContact = Contact(

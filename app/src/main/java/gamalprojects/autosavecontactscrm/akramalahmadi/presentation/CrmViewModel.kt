@@ -78,6 +78,16 @@ class CrmViewModel(application: Application) : AndroidViewModel(application) {
     private val _isDarkMode = MutableStateFlow(true)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
+    // Gmail Sync States
+    private val _gmailAccount = MutableStateFlow("")
+    val gmailAccount: StateFlow<String> = _gmailAccount.asStateFlow()
+
+    private val _googleSyncEnabled = MutableStateFlow(false)
+    val googleSyncEnabled: StateFlow<Boolean> = _googleSyncEnabled.asStateFlow()
+
+    private val _autoExportCrm = MutableStateFlow(false)
+    val autoExportCrm: StateFlow<Boolean> = _autoExportCrm.asStateFlow()
+
     init {
         checkAllPermissionStates()
         // Check stored theme preference
@@ -85,6 +95,21 @@ class CrmViewModel(application: Application) : AndroidViewModel(application) {
             val setting = db.settingDao().getSetting("app_theme")
             if (setting != null) {
                 _isDarkMode.value = (setting.value == "dark")
+            }
+
+            val emailSetting = db.settingDao().getSetting("gmail_account")
+            if (emailSetting != null) {
+                _gmailAccount.value = emailSetting.value
+            }
+
+            val syncSetting = db.settingDao().getSetting("google_sync_enabled")
+            if (syncSetting != null) {
+                _googleSyncEnabled.value = (syncSetting.value == "1")
+            }
+
+            val autoExpSetting = db.settingDao().getSetting("auto_export_crm")
+            if (autoExpSetting != null) {
+                _autoExportCrm.value = (autoExpSetting.value == "1")
             }
         }
     }
@@ -168,6 +193,101 @@ class CrmViewModel(application: Application) : AndroidViewModel(application) {
     fun exportContacts() {
         val list = contacts.value
         ExportManager.exportContactsToCsv(getApplication(), list)
+    }
+
+    // Gmail & Sync Settings actions
+    fun updateGmailAccount(email: String) {
+        viewModelScope.launch {
+            _gmailAccount.value = email
+            db.settingDao().insertSetting(SettingEntity("gmail_account", email))
+        }
+    }
+
+    fun toggleGoogleSync() {
+        viewModelScope.launch {
+            val nextVal = !_googleSyncEnabled.value
+            _googleSyncEnabled.value = nextVal
+            db.settingDao().insertSetting(SettingEntity("google_sync_enabled", if (nextVal) "1" else "0"))
+        }
+    }
+
+    fun toggleAutoExportCrm() {
+        viewModelScope.launch {
+            val nextVal = !_autoExportCrm.value
+            _autoExportCrm.value = nextVal
+            db.settingDao().insertSetting(SettingEntity("auto_export_crm", if (nextVal) "1" else "0"))
+        }
+    }
+
+    fun importFromGoogleContacts(onResult: (Int) -> Unit) {
+        viewModelScope.launch {
+            val account = _gmailAccount.value
+            val imported = gamalprojects.autosavecontactscrm.akramalahmadi.managers.ContactsManager.importFromGoogleContacts(getApplication(), if (account.isBlank()) null else account)
+            var count = 0
+            imported.forEach { (name, phone) ->
+                val normalized = gamalprojects.autosavecontactscrm.akramalahmadi.managers.PhoneNumberUtils.normalize(phone)
+                val existing = db.contactDao().getContactByPhone(normalized)
+                if (existing == null) {
+                    val nextId = db.settingDao().getSetting("next_customer_id")?.value?.toIntOrNull() ?: 1
+                    val clientName = "عميل $nextId"
+                    val newContact = Contact(
+                        name = clientName,
+                        phone = normalized,
+                        originalPhone = phone,
+                        source = "واتساب",
+                        isSyncedToPhone = true
+                    )
+                    db.contactDao().insertContact(newContact)
+                    db.settingDao().insertSetting(SettingEntity("next_customer_id", (nextId + 1).toString()))
+
+                    db.logEntryDao().insertLog(
+                        LogEntry(
+                            phone = phone,
+                            source = "استيراد من جمايل",
+                            status = "تم الاستيراد",
+                            details = "تم استيراد جهة الاتصال: $name وحفظه كعميل: $clientName"
+                        )
+                    )
+                    count++
+                }
+            }
+            onResult(count)
+        }
+    }
+
+    fun exportToGoogleContacts(onResult: (Int) -> Unit) {
+        viewModelScope.launch {
+            val account = _gmailAccount.value
+            if (account.isBlank()) {
+                onResult(-1)
+                return@launch
+            }
+            var count = 0
+            val list = contacts.value
+            list.forEach { contact ->
+                if (!contact.isSyncedToPhone) {
+                    val success = gamalprojects.autosavecontactscrm.akramalahmadi.managers.ContactsManager.saveToGoogleContacts(
+                        getApplication(),
+                        contact.name,
+                        contact.originalPhone,
+                        account
+                    )
+                    if (success) {
+                        db.contactDao().insertContact(contact.copy(isSyncedToPhone = true))
+                        db.logEntryDao().insertLog(
+                            LogEntry(
+                                phone = contact.originalPhone,
+                                source = "تصدير إلى جمايل",
+                                status = "تصدير ناجح",
+                                details = "تم تصدير العميل ${contact.name} إلى حساب جوجل: $account"
+                            )
+                        )
+                        count++
+                    }
+                }
+            }
+            onResult(count)
+        }
     }
 }
 

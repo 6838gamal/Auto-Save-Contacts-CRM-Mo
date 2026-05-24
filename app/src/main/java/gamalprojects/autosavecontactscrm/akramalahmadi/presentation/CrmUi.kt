@@ -1288,6 +1288,169 @@ fun SettingsScreen(viewModel: CrmViewModel) {
             }
         }
 
+        // Gmail Synchronization Settings
+        item {
+            val email by viewModel.gmailAccount.collectAsStateWithLifecycle()
+            val googleSyncEnabled by viewModel.googleSyncEnabled.collectAsStateWithLifecycle()
+            val autoExportCrm by viewModel.autoExportCrm.collectAsStateWithLifecycle()
+            var textEmail by remember(email) { mutableStateOf(email) }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEA4335).copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Sync,
+                                contentDescription = null,
+                                tint = Color(0xFFEA4335)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "مزامنة حساب Google / Gmail",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "عنوان حساب Gmail للعملاء:",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    
+                    OutlinedTextField(
+                        value = textEmail,
+                        onValueChange = {
+                            textEmail = it
+                            viewModel.updateGmailAccount(it)
+                        },
+                        placeholder = { Text(text = "example@gmail.com", fontSize = 13.sp) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Divider(color = Color.Gray.copy(alpha = 0.2f))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Automatic Export Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = "المزامنة والتصدير التلقائي", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Text(text = "حفظ أي عميل جديد مجهول في جهات اتصال Gmail تلقائياً بمجرد رصده.", fontSize = 10.sp, color = Color.Gray)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Switch(
+                            checked = googleSyncEnabled,
+                            onCheckedChange = { viewModel.toggleGoogleSync() }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Automatic CRM Export Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = "التصدير التلقائي لقاعدة البيانات", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Text(text = "نسخ احتياطي تلقائي للتقreports وملف CSV عند إضافة عملاء جدد.", fontSize = 10.sp, color = Color.Gray)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Switch(
+                            checked = autoExportCrm,
+                            onCheckedChange = { viewModel.toggleAutoExportCrm() }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider(color = Color.Gray.copy(alpha = 0.2f))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(text = "العمليات اليدوية الفورية:", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Import Button
+                        Button(
+                            onClick = {
+                                viewModel.importFromGoogleContacts { count ->
+                                    Toast.makeText(context, "تم استيراد $count عميل جديد من حساب Google بنجاح!", Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(vertical = 12.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = "استيراد من Gmail", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        // Export Button
+                        Button(
+                            onClick = {
+                                if (textEmail.isBlank()) {
+                                    Toast.makeText(context, "يرجى كتابة بريد Gmail أولاً لربط المزامنة!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    viewModel.exportToGoogleContacts { count ->
+                                        if (count == -1) {
+                                            Toast.makeText(context, "البريد الإلكتروني غير صالح!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "تم تصدير ومزامنة $count عميل بنجاح إلى حساب $textEmail!", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFEA4335).copy(alpha = 0.12f),
+                                contentColor = Color(0xFFEA4335)
+                            ),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(vertical = 12.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = "تصدير للجمايل", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
         // Developer Info card
         item {
             Card(

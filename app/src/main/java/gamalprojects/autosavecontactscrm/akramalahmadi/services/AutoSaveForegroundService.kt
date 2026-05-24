@@ -91,19 +91,27 @@ class AutoSaveForegroundService : Service() {
         const val ACTION_STOP_SERVICE = "gamalprojects.autosavecontactscrm.akramalahmadi.services.ACTION_STOP_SERVICE"
 
         fun start(context: Context) {
-            val intent = Intent(context, AutoSaveForegroundService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                val intent = Intent(context, AutoSaveForegroundService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (e: Exception) {
+                Log.e("ForegroundService", "Cannot start foreground service from background or due to OS restrictions", e)
             }
         }
 
         fun stop(context: Context) {
-            val intent = Intent(context, AutoSaveForegroundService::class.java).apply {
-                action = ACTION_STOP_SERVICE
+            try {
+                val intent = Intent(context, AutoSaveForegroundService::class.java).apply {
+                    action = ACTION_STOP_SERVICE
+                }
+                context.startService(intent)
+            } catch (e: Exception) {
+                Log.e("ForegroundService", "Cannot stop foreground service: ${e.message}", e)
             }
-            context.startService(intent)
         }
     }
 }
